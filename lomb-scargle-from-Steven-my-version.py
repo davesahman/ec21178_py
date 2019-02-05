@@ -53,8 +53,8 @@ if period:
     #freq = np.linspace(0.1,5,100)
     power = ls.power(freq)                      # Calculate periodogram powers            
     fmax  = freq[power==power.max()]        # Calculate peak in periodogram
-    print("Peak in periodogram at cycles / min. Period of minutes",1440*1/fmax) 
-    print("fmax =",fmax)
+  #  print("Peak in periodogram at cycles / min. Period of minutes",1440*1/fmax) 
+  #  print("fmax =",fmax)
 
 phase=fmax*x
 # print (phase[:10])
@@ -66,7 +66,7 @@ phase=np.mod(phase,1)
 a = x[55:90]
 b = y[55:90]
 c = e[55:90]
-print ('phase =',phase[55:90])
+# print ('phase =',phase[55:90])
 
 # subtract off integer part of MJD
 # otherwise floating point errs in minimisation
@@ -95,8 +95,21 @@ best_vals, covar = curve_fit(gaussian, a, g1, p0=init_vals)
 plt.plot(a, gaussian(a, *best_vals), label="fit")
 plt.plot(a, g1, label="data")
 plt.legend()
-plt.show()
+# plt.show()
 
 mid_ecl = tfloor + best_vals[1]
 mid_ecl_err = np.sqrt(covar[1,1])
 print("Eclipse Time = ",mid_ecl, "+/-", mid_ecl_err)
+
+# create array of with number of cycle
+
+cycl = np.empty(phase.shape,dtype=float)
+cycl[0]=0
+# print ('range(len(phase))',range(len(phase)))
+for i in range(len(phase)-1):
+    
+    if phase[i] > phase[i+1]:
+        cycl[i] = cycl[i-1] +1.
+    print ('i and cycl[i]',i,cycl[i])
+
+# print(' cycle and phase', cycl[:60], phase[:60])
