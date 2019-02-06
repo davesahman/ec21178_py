@@ -11,6 +11,8 @@ from hipercam.hlog import Hlog
 from astropy.convolution import convolve, Box1DKernel
 from astropy.stats import gaussian_fwhm_to_sigma
 
+np.set_printoptions(precision=12)
+
 # Set up gaussian model
 def gaussian(x, amp, cen, wid):
     return amp * exp (-(x-cen)**2/(2*wid**2))
@@ -73,7 +75,7 @@ c = e[55:90]
 tfloor = int(a.min())
 a -= tfloor
 
-# Fit Gaussian to the min value of dfdt_ts
+# Fit Gaussian to the min value of b
 #-------------------------------------------------------
 # find min values of b
 min_arg = np.argmin(b)
@@ -92,9 +94,9 @@ init_vals = [amp ,cen, wid]
 best_vals, covar = curve_fit(gaussian, a, g1, p0=init_vals)
 
 # Plot results
-plt.plot(a, gaussian(a, *best_vals), label="fit")
-plt.plot(a, g1, label="data")
-plt.legend()
+# plt.plot(a, gaussian(a, *best_vals), label="fit")
+# plt.plot(a, g1, label="data")
+# plt.legend()
 # plt.show()
 
 mid_ecl = tfloor + best_vals[1]
@@ -103,13 +105,41 @@ print("Eclipse Time = ",mid_ecl, "+/-", mid_ecl_err)
 
 # create array of with number of cycle
 
-cycl = np.empty(phase.shape,dtype=float)
-cycl[0]=0
+cycle = np.zeros(phase.shape,dtype=int)
+cycle[0]=0
 # print ('range(len(phase))',range(len(phase)))
 for i in range(len(phase)-1):
-    
+    cycle[i + 1] = cycle[i]
     if phase[i] > phase[i+1]:
-        cycl[i] = cycl[i-1] +1.
-    print ('i and cycl[i]',i,cycl[i])
+        cycle[i+1] = cycle[i] + 1
 
-# print(' cycle and phase', cycl[:60], phase[:60])
+# loop over each cycle
+
+i = 1
+while i < 3:
+    c_range = cycle == i
+    x_range = x[c_range]
+    y_range = y[c_range]
+    tfloor = int(x_range.min())
+    x_range -= tfloor
+    min_arg = np.argmin(y)
+    t_min = x_range[min_arg]
+
+    y_range -= y_range.max()
+    yr = np.fabs(y_range)
+
+    # Gaussian fit
+    # Initial guesses
+    amp = yr[min_arg]
+    cen = t_min
+    wid = est_fwhm(x_range, yr) * gaussian_fwhm_to_sigma
+    init_vals = [amp ,cen, wid]
+    best_vals, covar = curve_fit(gaussian, x_range, yr, p0=init_vals)
+
+    # Plot results
+    plt.plot(x_range, gaussian(x_range, *best_vals), label="fit")
+    plt.plot(x_range, yr, label="data")
+    plt.legend()
+    plt.show()
+
+    i += 1
