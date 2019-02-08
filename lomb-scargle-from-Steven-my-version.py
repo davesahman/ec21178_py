@@ -26,7 +26,15 @@ def est_fwhm(x, y):
     x_within_halfmax = x[within_halfmax]
     return x_within_halfmax.max() - x_within_halfmax.min()
 
-
+def est_fwtm(x, y):
+    """
+    Estimate x range of a Gaussian - within tenth of max
+    """
+    fwtm = 0.1*y.max()
+    within_max = y > fwtm
+    x_fwtm = x[within_max]
+    y_fwtm = y[within_max]
+    return x_fwtm, y_fwtm
 
 MJD        = 58324
 lcfile     = '../data/EC21178-5417.txt'
@@ -64,7 +72,7 @@ phase=np.mod(phase,1)
 # print (phase[:100])
 # print("False alarm prob = {:.20f}".format(ls.false_alarm_probability(power.max())))
 
-
+'''
 a = x[55:90]
 b = y[55:90]
 c = e[55:90]
@@ -72,8 +80,8 @@ c = e[55:90]
 
 # subtract off integer part of MJD
 # otherwise floating point errs in minimisation
-tfloor = int(a.min())
-a -= tfloor
+# tfloor = int(a.min())
+# a -= tfloor
 
 # Fit Gaussian to the min value of b
 #-------------------------------------------------------
@@ -102,8 +110,9 @@ best_vals, covar = curve_fit(gaussian, a, g1, p0=init_vals)
 mid_ecl = tfloor + best_vals[1]
 mid_ecl_err = np.sqrt(covar[1,1])
 print("Eclipse Time = ",mid_ecl, "+/-", mid_ecl_err)
+'''
 
-# create array of with number of cycle
+# create array with number of cycle
 
 cycle = np.zeros(phase.shape,dtype=int)
 cycle[0]=0
@@ -113,33 +122,57 @@ for i in range(len(phase)-1):
     if phase[i] > phase[i+1]:
         cycle[i+1] = cycle[i] + 1
 
-# loop over each cycle
+print('cycle.shape =',cycle.shape)
+
+# loop over each cycle and fit gaussian
+ecl = np.zeros([cycle.shape[0],3],dtype=float)
 
 i = 1
-while i < 3:
+# while i < cycle.max():
+while i < 20:
     c_range = cycle == i
     x_range = x[c_range]
     y_range = y[c_range]
     tfloor = int(x_range.min())
     x_range -= tfloor
-    min_arg = np.argmin(y)
+    min_arg = np.argmin(y_range)
     t_min = x_range[min_arg]
-
     y_range -= y_range.max()
     yr = np.fabs(y_range)
+
+    fwtm = 0.4*yr.max()
+    within_max = yr > fwtm
+    x_fwtm = x_range[within_max]
+    y_fwtm = yr[within_max]
 
     # Gaussian fit
     # Initial guesses
     amp = yr[min_arg]
     cen = t_min
-    wid = est_fwhm(x_range, yr) * gaussian_fwhm_to_sigma
+    wid = est_fwhm(x_fwtm, y_fwtm) * gaussian_fwhm_to_sigma
     init_vals = [amp ,cen, wid]
-    best_vals, covar = curve_fit(gaussian, x_range, yr, p0=init_vals)
+    best_vals, covar = curve_fit(gaussian, x_fwtm, y_fwtm, p0=init_vals)
 
     # Plot results
-    plt.plot(x_range, gaussian(x_range, *best_vals), label="fit")
+    ''''
+    plt.plot(x_fwtm, gaussian(x_fwtm, *best_vals), label="fit")
     plt.plot(x_range, yr, label="data")
     plt.legend()
     plt.show()
-
+    '''
+    ecl[i,0] +=i
+    ecl[i,1] +=best_vals[1] + tfloor
+    ecl[i,2] +=np.sqrt(covar[1,1])
+    n=i
     i += 1
+print('ecl =',ecl[0:n+1])
+print('ecl[n,1] =',ecl[n,1])
+print('ecl[1,1] =',ecl[1,1])
+
+ave_period = (ecl[n,1] - ecl[1,1])/(n-1)
+
+print('ave period = ',ave_period)
+'''
+plt.plot(ecl[1:n,0],ecl[1:n,1])
+plt.show()
+'''
