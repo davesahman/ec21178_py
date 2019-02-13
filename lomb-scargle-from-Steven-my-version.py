@@ -62,17 +62,15 @@ if period:
     fmax  = freq[power==power.max()]        # Calculate peak in periodogram
 # print("Peak in periodogram at cycles / day. Period of days",1/fmax) 
 # print("fmax =",fmax)
-
+# print("False alarm prob = {:.20f}".format(ls.false_alarm_probability(power.max())))
 period_time = 1/fmax
 phase=fmax*x
 phase=np.mod(phase,1)
 t2 = x - (period_time * int(x[0]/period_time)) # subtract integer of first period 
 cycle1 = np.floor_divide(t2,period_time)
-# print('cycl_1.shape =',cycle1.shape)
 
-# print ('phase  ',phase[:100])
-# print("False alarm prob = {:.20f}".format(ls.false_alarm_probability(power.max())))
-
+cycle_vals = np.unique(cycle1)
+print('cycle_vals max',cycle_vals.max())
 '''
 a = x[55:90]
 b = y[55:90]
@@ -122,28 +120,23 @@ for i in range(len(phase)-1):
     cycle[i + 1] = cycle[i]
     if phase[i] > phase[i+1]:
         cycle[i+1] = cycle[i] + 1
-
-# print('cycle.shape =',cycle.shape)
 '''
-# create list of bad or missed eclipses
-
-bad_ecl = [1]
-
+# print('cycle.shape =',cycle1.shape)
+# print('cycle1 max',cycle1.max())
 # loop over each cycle and fit gaussian
-ecl = np.empty([cycle1.shape[0],3],dtype=float)
+ecl = np.zeros([int(cycle_vals.max()),3],dtype=float)
+# print('ecl ',ecl)
 
-i = 84
-# print('cycle1.max =',cycle1.max())
-# input("Press enter to continue......")
-# while i < (cycle1.max() - 1):
-while i < 100:
+i = 0
+n = 0
+while i < (cycle_vals.max()-1):
+# while i < 100:
     i += 1
     if i in cycle1:
-      n=i
-      print('i before =',i)
-      if i == 86 or i ==93:  # this eclipse was not caught in the data
+      n += 1
+      print('processing eclipse no. =',i)
+      if i == 86 or i ==93 or i ==149 or i==152:  # these eclipses are bad
          continue
-      print('i after =',i)
       c_range = cycle1 == i
       # print('c_range = ',c_range)
       x_range = x[c_range]
@@ -155,7 +148,6 @@ while i < 100:
       t_min = x_range[min_arg]
       y_range -= y_range.max()
       yr = np.fabs(y_range)
-
       fwtm = 0.4*yr.max()
       within_max = yr > fwtm
       x_fwtm = x_range[within_max]
@@ -163,29 +155,36 @@ while i < 100:
 
     # Gaussian fit
     # Initial guesses
-    amp = yr[min_arg]
-    cen = t_min
-    wid = est_fwhm(x_fwtm, y_fwtm) * gaussian_fwhm_to_sigma
-    init_vals = [amp ,cen, wid]
-    best_vals, covar = curve_fit(gaussian, x_fwtm, y_fwtm, p0=init_vals)
+      amp = yr[min_arg]
+      cen = t_min
+      wid = est_fwhm(x_fwtm, y_fwtm) * gaussian_fwhm_to_sigma
+      init_vals = [amp ,cen, wid]
+      best_vals, covar = curve_fit(gaussian, x_fwtm, y_fwtm, p0=init_vals)
 
     # Plot results
-   
-    plt.plot(x_fwtm, gaussian(x_fwtm, *best_vals), label="fit")
-    plt.plot(x_range, yr, label="data")
-    plt.legend()
-    plt.show()
-  
-    ecl[i,0] +=i
-    ecl[i,1] +=best_vals[1] + tfloor
-    ecl[i,2] +=np.sqrt(covar[1,1])
+     
+      plt.plot(x_fwtm, gaussian(x_fwtm, *best_vals), label="fit")
+      plt.plot(x_range, yr, label="data")
+      plt.legend()
+      # plt.show()
+
+      ecl[i,0] +=i
+      ecl[i,1] +=best_vals[1] + tfloor
+      ecl[i,2] +=np.sqrt(covar[1,1])
+
+# print('ecl 140-181=',ecl[175:])
+# remove rows with zero entries
+ecl = ecl[~np.all(ecl==0, axis=1)]
+print('ecl =',ecl)
+
 # print('ecl =',ecl[0:n+1])
 #  print('ecl[n,1] =',ecl[n,1])
 #  print('ecl[1,1] =',ecl[1,1])
+s = ecl.shape[0]
 
-ave_period = (ecl[n,1] - ecl[1,1])/(n-1)
+ave_period = (ecl[s-1,1] - ecl[1,1])/(s)
 
-# print('ave period = ',ave_period)
+print('ave period = ',ave_period)
 
 plt.plot(ecl[1:n,0],ecl[1:n,1],'ro')
 plt.show()
