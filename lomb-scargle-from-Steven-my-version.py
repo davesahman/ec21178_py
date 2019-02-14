@@ -162,12 +162,12 @@ while i < (cycle_vals.max()-1):
       best_vals, covar = curve_fit(gaussian, x_fwtm, y_fwtm, p0=init_vals)
 
     # Plot results
-     
+      '''
       plt.plot(x_fwtm, gaussian(x_fwtm, *best_vals), label="fit")
       plt.plot(x_range, yr, label="data")
       plt.legend()
       # plt.show()
-
+      '''
       ecl[i,0] +=i
       ecl[i,1] +=best_vals[1] + tfloor
       ecl[i,2] +=np.sqrt(covar[1,1])
@@ -186,5 +186,6 @@ ave_period = (ecl[s-1,1] - ecl[1,1])/(s)
 
 print('ave period = ',ave_period)
 
-plt.plot(ecl[1:n,0],ecl[1:n,1],'ro')
+plt.plot(ecl[1:n,1],ecl[1:n,0], 'ro')
+plt.xlim(58323,58353) 
 plt.show()
