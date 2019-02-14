@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import numpy as np
-from numpy import exp, linspace,random
+from numpy import exp, linspace,random, math
 from astropy.stats import LombScargle
 import matplotlib.pyplot as plt
 import scipy
@@ -36,6 +36,11 @@ def est_fwtm(x, y):
     y_fwtm = y[within_max]
     return x_fwtm, y_fwtm
 
+def find_nearest(a, a0):
+    "Element in nd array `a` closest to the scalar value `a0`"
+    idx = np.abs(a - a0).argmin()
+    return a.flat[idx]
+
 MJD        = 58324
 lcfile     = '../data/EC21178-5417.txt'
 Title      = 'EC21178'
@@ -50,7 +55,6 @@ plt.plot(x,y)
 plt.show()
 '''
 
-
 if period:
     # x *= 1440.                                 # Change to minutes
     ls    = LombScargle(x,y,e)                 # Create periodogram
@@ -61,80 +65,25 @@ if period:
     power = ls.power(freq)                      # Calculate periodogram powers            
     fmax  = freq[power==power.max()]        # Calculate peak in periodogram
 # print("Peak in periodogram at cycles / day. Period of days",1/fmax) 
-# print("fmax =",fmax)
-# print("False alarm prob = {:.20f}".format(ls.false_alarm_probability(power.max())))
 period_time = 1/fmax
-phase=fmax*x
-phase=np.mod(phase,1)
-t2 = x - (period_time * int(x[0]/period_time)) # subtract integer of first period 
-cycle1 = np.floor_divide(t2,period_time)
-
+phase = fmax*x
+phase = np.mod(phase,1)
+tfloor = period_time * int(x[0]/period_time)
+print
+x -= tfloor # subtract integer of first period 
+cycle1 = np.floor_divide(x,period_time)
 cycle_vals = np.unique(cycle1)
-print('cycle_vals max',cycle_vals.max())
-'''
-a = x[55:90]
-b = y[55:90]
-c = e[55:90]
-# print ('phase =',phase[55:90])
 
-# subtract off integer part of MJD
-# otherwise floating point errs in minimisation
-# tfloor = int(a.min())
-# a -= tfloor
-
-# Fit Gaussian to the min value of b
-#-------------------------------------------------------
-# find min values of b
-min_arg = np.argmin(b)
-t_min = a[min_arg]
-
-# get gaussian around peak to fit
-b -= b.max()
-g1 = np.fabs(b)
-
-# Gaussian fit
-# Initial guesses
-amp = -1 * b[min_arg]
-cen = t_min
-wid = est_fwhm(a, g1) * gaussian_fwhm_to_sigma
-init_vals = [amp ,cen, wid]
-best_vals, covar = curve_fit(gaussian, a, g1, p0=init_vals)
-
-# Plot results
-# plt.plot(a, gaussian(a, *best_vals), label="fit")
-# plt.plot(a, g1, label="data")
-# plt.legend()
-# plt.show()
-
-mid_ecl = tfloor + best_vals[1]
-mid_ecl_err = np.sqrt(covar[1,1])
-print("Eclipse Time = ",mid_ecl, "+/-", mid_ecl_err)
-'''
-
-# create array with number of cycle
-'''
-cycle = np.zeros(phase.shape,dtype=int)
-cycle[0]=0
-# print ('range(len(phase))',range(len(phase)))
-for i in range(len(phase)-1):
-    cycle[i + 1] = cycle[i]
-    if phase[i] > phase[i+1]:
-        cycle[i+1] = cycle[i] + 1
-'''
-# print('cycle.shape =',cycle1.shape)
-# print('cycle1 max',cycle1.max())
 # loop over each cycle and fit gaussian
+
 ecl = np.zeros([int(cycle_vals.max()),3],dtype=float)
-# print('ecl ',ecl)
 
 i = 0
-n = 0
 while i < (cycle_vals.max()-1):
 # while i < 100:
     i += 1
     if i in cycle1:
-      n += 1
-      print('processing eclipse no. =',i)
+      # print('processing eclipse no. =',i)
       if i == 86 or i ==93 or i ==149 or i==152:  # these eclipses are bad
          continue
       c_range = cycle1 == i
@@ -142,8 +91,8 @@ while i < (cycle_vals.max()-1):
       x_range = x[c_range]
       # print('x_range = ',x_range)
       y_range = y[c_range]
-      tfloor = int(x_range.min())
-      x_range -= tfloor
+      #tfloor = int(x_range.min())
+      #x_range -= tfloor
       min_arg = np.argmin(y_range)
       t_min = x_range[min_arg]
       y_range -= y_range.max()
@@ -161,7 +110,7 @@ while i < (cycle_vals.max()-1):
       init_vals = [amp ,cen, wid]
       best_vals, covar = curve_fit(gaussian, x_fwtm, y_fwtm, p0=init_vals)
 
-    # Plot results
+    # Plot results of gaussian fits
       '''
       plt.plot(x_fwtm, gaussian(x_fwtm, *best_vals), label="fit")
       plt.plot(x_range, yr, label="data")
@@ -169,23 +118,36 @@ while i < (cycle_vals.max()-1):
       # plt.show()
       '''
       ecl[i,0] +=i
-      ecl[i,1] +=best_vals[1] + tfloor
+      ecl[i,1] +=best_vals[1] # + tfloor
       ecl[i,2] +=np.sqrt(covar[1,1])
 
-# print('ecl 140-181=',ecl[175:])
-# remove rows with zero entries
+    # scale y values to min
+      y[c_range] -= (y.min() - y_range.min())
+
+
+# remove rows in ecl array with all zero entries
 ecl = ecl[~np.all(ecl==0, axis=1)]
-print('ecl =',ecl)
+# print('ecl =',ecl)
 
-# print('ecl =',ecl[0:n+1])
-#  print('ecl[n,1] =',ecl[n,1])
-#  print('ecl[1,1] =',ecl[1,1])
 s = ecl.shape[0]
+ave_period = (ecl[s-1,1] - ecl[0,1])/(ecl[s-1,0]-1)
 
-ave_period = (ecl[s-1,1] - ecl[1,1])/(s)
+print('ave period (days)          = ',ave_period)
+print('ave peri(od (mins)          = ',1440*ave_period)
+print('Lomb Sca(rgle period (mins) = ',1440*period_time)
 
-print('ave period = ',ave_period)
 
-plt.plot(ecl[1:n,1],ecl[1:n,0], 'ro')
-plt.xlim(58323,58353) 
+# plot eclipse times
+'''
+plt.plot(ecl[0:(s-1,1],ecl[0:s-1,0], 'ro')
+plt.xlim(0.1,28.) 
+plt.show()
+'''
+
+# Create revised phase array
+
+phase1 = x/ave_period
+phase1 = np.mod(phase1,1)
+
+plt.scatter(phase1,y, s=1, marker ='.' )
 plt.show()
