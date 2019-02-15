@@ -87,9 +87,7 @@ while i < (cycle_vals.max()-1):
       if i == 86 or i ==93 or i ==149 or i==152:  # these eclipses are bad
          continue
       c_range = cycle1 == i
-      # print('c_range = ',c_range)
       x_range = x[c_range]
-      # print('x_range = ',x_range)
       y_range = y[c_range]
       #tfloor = int(x_range.min())
       #x_range -= tfloor
@@ -121,23 +119,28 @@ while i < (cycle_vals.max()-1):
       ecl[i,1] +=best_vals[1] # + tfloor
       ecl[i,2] +=np.sqrt(covar[1,1])
 
-    # scale y values to min
-      y[c_range] -= (y.min() - y_range.min())
 
+    # scale y values to y.min
+      '''
+      print('y[c_range]',y[c_range])
+      print('y.min()',y.min())
+      print('y[c_range].min()',y[c_range].min())
+      
+      y[c_range] -= (y[c_range].min() - y.min()) 
+      '''
 
 # remove rows in ecl array with all zero entries
 ecl = ecl[~np.all(ecl==0, axis=1)]
 # print('ecl =',ecl)
-
 s = ecl.shape[0]
 ave_period = (ecl[s-1,1] - ecl[0,1])/(ecl[s-1,0]-1)
 
 print('ave period (days)          = ',ave_period)
 print('ave peri(od (mins)          = ',1440*ave_period)
-print('Lomb Sca(rgle period (mins) = ',1440*period_time)
+print('Lomb Scargle period (mins) = ',1440*period_time)
 
 
-# plot eclipse times
+# plot eclipse times vs time
 '''
 plt.plot(ecl[0:(s-1,1],ecl[0:s-1,0], 'ro')
 plt.xlim(0.1,28.) 
@@ -149,5 +152,6 @@ plt.show()
 phase1 = x/ave_period
 phase1 = np.mod(phase1,1)
 
-plt.scatter(phase1,y, s=1, marker ='.' )
+plt.scatter(phase1,y, s=1, marker='o')
+# plt.plot(phase1,y,'-', lw=0.4 )
 plt.show()
