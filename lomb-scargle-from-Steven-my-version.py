@@ -141,11 +141,10 @@ print('Lomb Scargle period (mins) = ',1440*period_time)
 
 
 # plot eclipse times vs time
-'''
-plt.plot(ecl[0:(s-1,1],ecl[0:s-1,0], 'ro')
+
+plt.plot(ecl[0:s-1,1],ecl[0:s-1,0], 'ro')
 plt.xlim(0.1,28.) 
 plt.show()
-'''
 
 # Create revised phase array
 
