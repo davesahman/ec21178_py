@@ -155,5 +155,4 @@ plt.scatter(phase1,y, s=1, marker='o')
 # plt.plot(phase1,y,'-', lw=0.4 )
 plt.show()
 '''
-
 np.savetxt("eclipse_times.txt",ecl)
