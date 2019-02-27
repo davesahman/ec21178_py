@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import numpy as np
 from numpy import exp, linspace,random, math
 from astropy.stats import LombScargle
@@ -55,6 +56,8 @@ plt.plot(x,y)
 plt.show()
 '''
 
+#  Fit Lomb-Scargle periodogram to get approx period
+
 if period:
     # x *= 1440.                                 # Change to minutes
     ls    = LombScargle(x,y,e)                 # Create periodogram
@@ -69,11 +72,13 @@ period_time = 1/fmax
 phase = fmax*x
 phase = np.mod(phase,1)
 tfloor = period_time * int(x[0]/period_time)
-print
+# tfloor = int(x[0])
+print('tfloor =',tfloor)
 x -= tfloor # subtract integer of first period 
 cycle1 = np.floor_divide(x,period_time)
 cycle_vals = np.unique(cycle1)
 # print('cycle_vals',cycle_vals)
+# print('cycle_vals.max()',cycle_vals.max())
 
 # loop over each cycle and fit gaussian
 
@@ -119,7 +124,8 @@ while i < (cycle_vals.max()-1):
       ecl[i,0] +=i
       ecl[i,1] +=best_vals[1] # + tfloor
       ecl[i,2] +=np.sqrt(covar[1,1])
-
+      print('ecl[i,0] & ecl[i,1]',ecl[i,0],ecl[i,1])
+      
 
     # scale y values to y.min
       '''
@@ -157,5 +163,6 @@ plt.scatter(phase1,y, s=1, marker='o')
 # plt.plot(phase1,y,'-', lw=0.4 )
 plt.show()
 '''
-np.savetxt("eclipse_times.txt",ecl)
+# np.savetxt("eclipse_times.txt",ecl)
 
+exit()
