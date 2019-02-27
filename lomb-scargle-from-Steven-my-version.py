@@ -73,6 +73,7 @@ print
 x -= tfloor # subtract integer of first period 
 cycle1 = np.floor_divide(x,period_time)
 cycle_vals = np.unique(cycle1)
+# print('cycle_vals',cycle_vals)
 
 # loop over each cycle and fit gaussian
 
@@ -131,7 +132,6 @@ while i < (cycle_vals.max()-1):
 
 # remove rows in ecl array with all zero entries
 ecl = ecl[~np.all(ecl==0, axis=1)]
-# print('ecl =',ecl)
 s = ecl.shape[0]
 ave_period = (ecl[s-1,1] - ecl[0,1])/(ecl[s-1,0]-1)
 
@@ -141,11 +141,13 @@ print('Lomb Scargle period (mins) = ',1440*period_time)
 
 
 # plot eclipse times vs time
-'''
+
+plt.figure(figsize=(20,10))
 plt.plot(ecl[0:s-1,1],ecl[0:s-1,0], 'ro')
 plt.xlim(0.1,28.) 
 plt.show()
-'''
+
+
 # Create revised phase array
 
 phase1 = x/ave_period
@@ -155,5 +157,5 @@ plt.scatter(phase1,y, s=1, marker='o')
 # plt.plot(phase1,y,'-', lw=0.4 )
 plt.show()
 '''
-
 np.savetxt("eclipse_times.txt",ecl)
+

@@ -32,9 +32,25 @@ print('covars[1,1]',covars[1,1])
 print('np.sqrt(abs(covars[0,0]))',np.sqrt(abs(covars[0,0])))
 print('np.sqrt(abs(covars[1,1]))',np.sqrt(abs(covars[1,1])))
 
+y2 = x*fit[0] + fit[1]
 
+'''
+plt.scatter(x,y, s=3, marker='o', label='data')
+plt.plot(x,y2,label='fit')
+plt.legend()
+plt.show()
+'''
+plt.figure(figsize=(20,10))
+plt.plot(x,(y-y2)*86400)
+plt.title('EC21178   O-C Plot')
+plt.axhline(y=0,color='black')
+plt.xlabel('Eclipse No.')
+plt.ylabel('Time (sec)')
+plt.show()
 
+'''
 sigt = np.sqrt(abs(covars[0,0]))
 sigp = np.sqrt(covars[1,1])
 N = round((-1*sigt*sigp)/(sigp**2))
 print('N=',N)
+'''
