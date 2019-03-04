@@ -90,7 +90,7 @@ while i < (cycle_vals.max()-1):
     i += 1
     if i in cycle1:
       # print('processing eclipse no. =',i)
-      if i == 86 or i ==93 or i ==149 or i==152:  # these eclipses are bad
+      if i == 33 or i ==86 or i ==93 or i == 146 or i ==149 or i==152 or i == 153 or i == 154 or i == 155:  # these eclipses are bad
          continue
       c_range = cycle1 == i
       x_range = x[c_range]
@@ -163,6 +163,6 @@ plt.scatter(phase1,y, s=1, marker='o')
 # plt.plot(phase1,y,'-', lw=0.4 )
 plt.show()
 '''
-# np.savetxt("eclipse_times.txt",ecl)
+np.savetxt("eclipse_times.txt",ecl)
 
 exit()
