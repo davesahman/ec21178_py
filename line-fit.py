@@ -42,11 +42,11 @@ plt.show()
 '''
 plt.figure(figsize=(15,7))
 plt.scatter(x,(y-y2)*86400)
-plt.title('EC21178   O-C Plot')
+plt.title('EC2e1178   O-C Plot')
 plt.axhline(y=0,color='black')
 plt.xlabel('Eclipse No.')
 plt.ylabel('Time (sec)')
-# plt.show()
+plt.show()
 
 
 sigt = np.sqrt(abs(covars[0,0]))
