@@ -1,3 +1,5 @@
+
+
 # Program to fit gaussian to light curve- first attempt!
 # D Sahman Nov 2018
 #=======================================================
@@ -20,6 +22,7 @@ np.set_printoptions(precision=12)
 # Load file
 # =========
 print ('Please enter filename: ')
+# use ../data/EC21178-5417.txt
 filename=input()
 data = np.loadtxt(filename)
 

@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+#  Program to plot O-C curve for EC21178
+#  Uses output file "eclipse_times.txt" from 
+#  program eclipse_measure.py
+
+
+
 import numpy as np
 from numpy import exp, linspace,random, math
 from astropy.stats import LombScargle
@@ -42,7 +48,7 @@ plt.show()
 '''
 plt.figure(figsize=(15,7))
 plt.scatter(x,(y-y2)*86400)
-plt.title('EC2e1178   O-C Plot')
+plt.title('EC21178   O-C Plot')
 plt.axhline(y=0,color='black')
 plt.xlabel('Eclipse No.')
 plt.ylabel('Time (sec)')
