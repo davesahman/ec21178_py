@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import numpy as np
 from numpy import exp, linspace,random, math
 from astropy.stats import LombScargle
@@ -37,7 +38,9 @@ def est_fwtm(x, y):
     return x_fwtm, y_fwtm
 
 def find_nearest(a, a0):
-    "Element in nd array `a` closest to the scalar value `a0`"
+    """
+    Finds the element in the array `a` closest to the scalar value `a0`
+    """
     idx = np.abs(a - a0).argmin()
     return a.flat[idx]
 
@@ -50,10 +53,11 @@ period     = True
 
 x,y,e = np.loadtxt(lcfile, unpack=True, usecols=(0,1,2))
 
-
+'''
+plt.figure(figsize=(20,10))
 plt.plot(x,y)
 plt.show()
-
+'''
 
 if period:
     # x *= 1440.                                 # Change to minutes
@@ -64,12 +68,18 @@ if period:
     #freq = np.linspace(0.1,5,100)
     power = ls.power(freq)                      # Calculate periodogram powers            
     fmax  = freq[power==power.max()]        # Calculate peak in periodogram
+
+    # Plot Periodogram
+    # plt.figure(figsize=(20,10))
+    # plt.plot(freq, power)
+    # plt.show()
+
 # print("Peak in periodogram at cycles / day. Period of days",1/fmax) 
 period_time = 1/fmax
 phase = fmax*x
 phase = np.mod(phase,1)
+
 tfloor = period_time * int(x[0]/period_time)
-print
 x -= tfloor # subtract integer of first period 
 cycle1 = np.floor_divide(x,period_time)
 cycle_vals = np.unique(cycle1)
@@ -80,7 +90,7 @@ ecl = np.zeros([int(cycle_vals.max()),3],dtype=float)
 
 i = 0
 while i < (cycle_vals.max()-1):
-# while i < 100:
+# while i < 10:
     i += 1
     if i in cycle1:
       # print('processing eclipse no. =',i)
@@ -110,11 +120,13 @@ while i < (cycle_vals.max()-1):
 
     # Plot results of gaussian fits
       '''
+      plt.figure(figsize=(20,10))
       plt.plot(x_fwtm, gaussian(x_fwtm, *best_vals), label="fit")
       plt.plot(x_range, yr, label="data")
       plt.legend()
-      # plt.show()
+      plt.show()
       '''
+      
       ecl[i,0] +=i
       ecl[i,1] +=best_vals[1] # + tfloor
       ecl[i,2] +=np.sqrt(covar[1,1])
@@ -136,23 +148,49 @@ s = ecl.shape[0]
 ave_period = (ecl[s-1,1] - ecl[0,1])/(ecl[s-1,0]-1)
 
 print('ave period (days)          = ',ave_period)
-print('ave peri(od (mins)          = ',1440*ave_period)
+print('ave period (hours)          = ',ave_period*24)
+print('ave period (mins)          = ',1440*ave_period)
 print('Lomb Scargle period (mins) = ',1440*period_time)
 
 
 # plot eclipse times vs time
 '''
+plt.figure(figsize=(20,10))
 plt.plot(ecl[0:s-1,1],ecl[0:s-1,0], 'ro')
 plt.xlim(0.1,28.) 
 plt.show()
 '''
 # Create revised phase array
 
-phase1 = x/ave_period
+phase1 = (x-ecl[0,1])/ave_period
 phase1 = np.mod(phase1,1)
 
+masked_y = y.copy()
+
+start_i = 0
+for i in range(len(masked_y)-1):
+  if phase1[i] < 0.9 and phase1[i+1] > 0.9:
+    start_i = i+1
+  if phase1[i] < 0.1 and phase[i+1] > 0.1:
+    start_value = masked_y[start_i-1]
+    finish_value = masked_y[i+1]
+    n_i = i - start_i + 2
+    range_values = finish_value - start_value
+    inc = range_values/n_i
+    for j in range(n_i):
+      masked_y[start_i + j] = start_value + inc*j
+
 # plt.scatter(phase1,y, s=1, marker='o')
-plt.plot(phase1,y,'-', lw=0.4 )
+plt.figure(figsize=(20,10))
+plt.plot(x,y,'-', lw=0.4 )
+plt.plot(x,masked_y,'-', lw=0.4 )
+# plt.plot(phase1,masked_y,'-', lw=0.4 )
+# plt.xlim(-0.5,0.5)
 plt.show()
 
-np.savetxt("eclipse_times.txt",ecl)
+
+print('ecl[0:10,1],ecl[0:10,0]',ecl[0:10,1],ecl[0:10,0])
+print('x 1-10',x[0:10])
+print('phase1 1-10',phase1[0:10])
+
+# np.savetxt("eclipse_times.txt",ecl)
