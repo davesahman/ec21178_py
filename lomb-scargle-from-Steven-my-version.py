@@ -147,22 +147,23 @@ print('Lomb Scargle period (mins) = ',1440*period_time)
 
 
 # plot eclipse times vs time
-
+'''
 plt.figure(figsize=(20,10))
 plt.plot(ecl[0:s-1,1],ecl[0:s-1,0], 'ro')
 plt.xlim(0.1,28.) 
 plt.show()
-
+'''
 
 # Create revised phase array
 
 phase1 = x/ave_period
 phase1 = np.mod(phase1,1)
-'''
-plt.scatter(phase1,y, s=1, marker='o')
-# plt.plot(phase1,y,'-', lw=0.4 )
+
+plt.figure(figsize=(20,10))
+# plt.scatter(phase1,y, s=1, marker='o')
+plt.plot(phase1,y,'-', lw=0.4 )
 plt.show()
-'''
+
 np.savetxt("eclipse_times.txt",ecl)
 
 exit()

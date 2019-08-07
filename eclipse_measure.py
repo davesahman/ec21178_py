@@ -50,10 +50,10 @@ period     = True
 
 x,y,e = np.loadtxt(lcfile, unpack=True, usecols=(0,1,2))
 
-'''
+
 plt.plot(x,y)
 plt.show()
-'''
+
 
 if period:
     # x *= 1440.                                 # Change to minutes
@@ -151,8 +151,8 @@ plt.show()
 phase1 = x/ave_period
 phase1 = np.mod(phase1,1)
 
-plt.scatter(phase1,y, s=1, marker='o')
-# plt.plot(phase1,y,'-', lw=0.4 )
+# plt.scatter(phase1,y, s=1, marker='o')
+plt.plot(phase1,y,'-', lw=0.4 )
 plt.show()
 
 np.savetxt("eclipse_times.txt",ecl)
