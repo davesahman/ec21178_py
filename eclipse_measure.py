@@ -181,13 +181,13 @@ for i in range(len(masked_y)-1):
       masked_y[start_i + j] = start_value + inc*j
 
 # plt.scatter(phase1,y, s=1, marker='o')
+# plt.plot(phase1,masked_y,'-', lw=0.4 )
+# plt.xlim(-0.5,0.5)
+
 plt.figure(figsize=(20,10))
 plt.plot(x,y,'-', lw=0.4 )
 plt.plot(x,masked_y,'-', lw=0.4 )
-# plt.plot(phase1,masked_y,'-', lw=0.4 )
-# plt.xlim(-0.5,0.5)
 plt.show()
-
 
 print('ecl[0:10,1],ecl[0:10,0]',ecl[0:10,1],ecl[0:10,0])
 print('x 1-10',x[0:10])
