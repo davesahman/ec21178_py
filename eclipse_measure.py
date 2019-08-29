@@ -185,12 +185,13 @@ for i in range(len(masked_y)-1):
 # plt.xlim(-0.5,0.5)
 
 plt.figure(figsize=(20,10))
-plt.plot(x,y,'-', lw=0.4 )
-plt.plot(x,masked_y,'-', lw=0.4 )
+plt.plot(x,y,'b-', lw=0.4 )
+plt.plot(x,masked_y,'g-', lw=0.4 )
 plt.show()
 
-print('ecl[0:10,1],ecl[0:10,0]',ecl[0:10,1],ecl[0:10,0])
-print('x 1-10',x[0:10])
-print('phase1 1-10',phase1[0:10])
+# print('ecl[0:10,1],ecl[0:10,0]',ecl[0:10,1],ecl[0:10,0])
+# print('x 1-10',x[0:10])
+# print('phase1 1-10',phase1[0:10])
 
 # np.savetxt("eclipse_times.txt",ecl)
+
