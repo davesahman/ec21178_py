@@ -70,11 +70,11 @@ if period:
     fmax  = freq[power==power.max()]        # Calculate peak in periodogram
 
     # Plot Periodogram
-    # plt.figure(figsize=(20,10))
-    # plt.plot(freq, power)
-    # plt.show()
+    plt.figure(figsize=(20,10))
+    plt.plot(freq, power)
+    plt.show()
 
-# print("Peak in periodogram at cycles / day. Period of days",1/fmax) 
+print("Peak in periodogram at cycles / day. Period of days",1/fmax) 
 period_time = 1/fmax
 phase = fmax*x
 phase = np.mod(phase,1)
@@ -180,18 +180,23 @@ for i in range(len(masked_y)-1):
     for j in range(n_i):
       masked_y[start_i + j] = start_value + inc*j
 
-# plt.scatter(phase1,y, s=1, marker='o')
-# plt.plot(phase1,masked_y,'-', lw=0.4 )
-# plt.xlim(-0.5,0.5)
-
 plt.figure(figsize=(20,10))
-plt.plot(x,y,'b-', lw=0.4 )
-plt.plot(x,masked_y,'g-', lw=0.4 )
-plt.show()
+# plt.plot(phase1,y, '-', marker='o')
+# plt.plot(phase1,masked_y,'-', lw=0.4 )
+# plt.scatter(phase1,y,s=5)
+# plt.scatter(phase1+1,y,s=5)
+# plt.xlim(0.01,1.99)
 
-# print('ecl[0:10,1],ecl[0:10,0]',ecl[0:10,1],ecl[0:10,0])
+# plt.plot(x,y,'b-', lw=0.4 )
+# plt.plot(x,masked_y,'g-', lw=0.4 )
+
+# plt.show()
+
+print('ecl[0:10,1],ecl[0:10,0]',ecl[0:10,1],ecl[0:10,0])
 # print('x 1-10',x[0:10])
 # print('phase1 1-10',phase1[0:10])
 
 # np.savetxt("eclipse_times.txt",ecl)
-
+# print("phase1 1-10",phase1[0:9])
+log = np.stack((x,y,e),axis=-1)
+np.savetxt("ec21178.log",log)
