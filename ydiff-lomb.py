@@ -21,14 +21,16 @@ period     = True
 
 x,y,e = np.loadtxt(lcfile, unpack=True, usecols=(0,1,2))
 
+'''
 plt.figure(figsize=(20,10))
 plt.plot(x,y)
 plt.show()
+'''
 
 if period:
     # x *= 1440.                                 # Change to minutes
     ls    = LombScargle(x,y,e)                 # Create periodogram
-    fmax  = 1                               # Set upper frequency (cycles/min) limit 
+    fmax  = 20                              # Set upper frequency (cycles/min) limit 
     nfreq = int(1000*fmax*(x.max()-x.min()))     # Calculate number of frequency steps, oversample x10
     freq  = np.linspace(fmax/nfreq,fmax,nfreq) # Create frequency array
     #freq = np.linspace(0.1,5,100)

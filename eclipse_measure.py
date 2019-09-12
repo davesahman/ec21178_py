@@ -3,7 +3,7 @@
 import sys
 import numpy as np
 from numpy import exp, linspace,random, math
-from astropy.stats import LombScargle
+from astropy.timeseries import LombScargle
 import matplotlib.pyplot as plt
 import scipy
 from scipy.optimize import curve_fit
@@ -70,9 +70,11 @@ if period:
     fmax  = freq[power==power.max()]        # Calculate peak in periodogram
 
     # Plot Periodogram
+    '''
     plt.figure(figsize=(20,10))
     plt.plot(freq, power)
     plt.show()
+    '''
 
 print("Peak in periodogram at cycles / day. Period of days",1/fmax) 
 period_time = 1/fmax
@@ -86,7 +88,7 @@ cycle_vals = np.unique(cycle1)
 
 # loop over each cycle and fit gaussian
 
-ecl = np.zeros([int(cycle_vals.max()),3],dtype=float)
+ecl = np.zeros([int(cycle_vals.max()),5],dtype=float)
 
 i = 0
 while i < (cycle_vals.max()-1):
@@ -118,6 +120,10 @@ while i < (cycle_vals.max()-1):
       init_vals = [amp ,cen, wid]
       best_vals, covar = curve_fit(gaussian, x_fwtm, y_fwtm, p0=init_vals)
 
+      # print('best vals ',best_vals)
+      # print('covar',covar)
+    
+
     # Plot results of gaussian fits
       '''
       plt.figure(figsize=(20,10))
@@ -127,9 +133,11 @@ while i < (cycle_vals.max()-1):
       plt.show()
       '''
       
-      ecl[i,0] +=i
-      ecl[i,1] +=best_vals[1] # + tfloor
-      ecl[i,2] +=np.sqrt(covar[1,1])
+      ecl[i,0] +=i # number of eclipse
+      ecl[i,1] +=best_vals[1] # centre of eclipse - need to add tfloor for true time
+      ecl[i,2] +=np.sqrt(covar[1,1]) # error on centre
+      ecl[i,3] +=best_vals[0] # amplitude
+      ecl[i,4] += best_vals[2] # width
 
 
     # scale y values to y.min
@@ -143,10 +151,8 @@ while i < (cycle_vals.max()-1):
 
 # remove rows in ecl array with all zero entries
 ecl = ecl[~np.all(ecl==0, axis=1)]
-# print('ecl =',ecl)
 s = ecl.shape[0]
 ave_period = (ecl[s-1,1] - ecl[0,1])/(ecl[s-1,0]-1)
-
 print('ave period (days)          = ',ave_period)
 print('ave period (hours)          = ',ave_period*24)
 print('ave period (mins)          = ',1440*ave_period)
@@ -160,6 +166,8 @@ plt.plot(ecl[0:s-1,1],ecl[0:s-1,0], 'ro')
 plt.xlim(0.1,28.) 
 plt.show()
 '''
+
+
 # Create revised phase array
 
 phase1 = (x-ecl[0,1])/ave_period
