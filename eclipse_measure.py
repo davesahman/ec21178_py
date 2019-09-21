@@ -2,8 +2,10 @@
 
 import sys
 import numpy as np
+import astropy
+import scipy
 from numpy import exp, linspace,random, math
-from astropy.timeseries import LombScargle
+from astropy.stats import LombScargle
 import matplotlib.pyplot as plt
 import scipy
 from scipy.optimize import curve_fit
@@ -187,18 +189,19 @@ for i in range(len(masked_y)-1):
     inc = range_values/n_i
     for j in range(n_i):
       masked_y[start_i + j] = start_value + inc*j
-
+'''
 plt.figure(figsize=(20,10))
-# plt.plot(phase1,y, '-', marker='o')
-# plt.plot(phase1,masked_y,'-', lw=0.4 )
+plt.plot(phase1,y, '-', marker='o')
+plt.plot(phase1,masked_y,'-', lw=0.4 )
+'''
 # plt.scatter(phase1,y,s=5)
 # plt.scatter(phase1+1,y,s=5)
 # plt.xlim(0.01,1.99)
 
-# plt.plot(x,y,'b-', lw=0.4 )
-# plt.plot(x,masked_y,'g-', lw=0.4 )
+plt.plot(x,y,'b-', lw=0.4 )
+plt.plot(x,masked_y,'g-', lw=0.4 )
 
-# plt.show()
+plt.show()
 
 print('ecl[0:10,1],ecl[0:10,0]',ecl[0:10,1],ecl[0:10,0])
 # print('x 1-10',x[0:10])

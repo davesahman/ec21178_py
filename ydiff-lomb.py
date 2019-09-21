@@ -20,7 +20,6 @@ device     = '1/xs'
 period     = True
 
 x,y,e = np.loadtxt(lcfile, unpack=True, usecols=(0,1,2))
-
 '''
 plt.figure(figsize=(20,10))
 plt.plot(x,y)
@@ -38,8 +37,16 @@ if period:
     fmax  = freq[power==power.max()]        # Calculate peak in periodogram
 
     # Plot Periodogram
+    '''
     plt.figure(figsize=(20,10))
     plt.plot(freq, power)
     plt.show()
+    '''
 
-print("Peak in periodogram at cycles / day. Period of days",1/fmax) 
+# print("Peak in periodogram at cycles / day. Period of days",1/fmax) 
+
+smooth_y = convolve(y, Box1DKernel(100))
+plt.figure(figsize=(20,10))
+plt.plot(x,y)
+plt.plot(x,smooth_y)
+plt.show()
