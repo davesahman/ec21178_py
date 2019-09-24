@@ -26,11 +26,14 @@ ph = np.mod(((tsnew + (period/2) - t1)) / period,1) - 0.5
 # sys.exit() 
 ynew = f(ph) 
 ydiff = ts.y - ynew
-
+print('tsnew',tsnew)
+print('ph=',ph)
+print('ynew=',ynew)
+sys.exit()
 plt.figure(figsize=(16,8))
-# plt.plot(ts.t,ts.y)
+plt.plot(ts.t,ts.y)
 # plt.plot(ts.t,ynew)
-plt.plot(ts.t,ydiff)
+# plt.plot(ts.t,ydiff)
 
 plt.show()
 
