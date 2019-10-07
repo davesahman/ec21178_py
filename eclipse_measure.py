@@ -5,7 +5,7 @@ import numpy as np
 import astropy
 import scipy
 from numpy import exp, linspace,random, math
-from astropy.stats import LombScargle
+from astropy.timeseries import LombScargle
 import matplotlib.pyplot as plt
 import scipy
 from scipy.optimize import curve_fit
@@ -55,12 +55,6 @@ period     = True
 
 x,y,e = np.loadtxt(lcfile, unpack=True, usecols=(0,1,2))
 
-'''
-plt.figure(figsize=(20,10))
-plt.plot(x,y)
-plt.show()
-'''
-
 if period:
     # x *= 1440.                                 # Change to minutes
     ls    = LombScargle(x,y,e)                 # Create periodogram
@@ -72,11 +66,11 @@ if period:
     fmax  = freq[power==power.max()]        # Calculate peak in periodogram
 
     # Plot Periodogram
-    '''
+    
     plt.figure(figsize=(20,10))
     plt.plot(freq, power)
     plt.show()
-    '''
+    
 
 print("Peak in periodogram at cycles / day. Period of days",1/fmax) 
 period_time = 1/fmax
@@ -90,21 +84,17 @@ cycle_vals = np.unique(cycle1)
 
 # loop over each cycle and fit gaussian
 
-ecl = np.zeros([int(cycle_vals.max()),5],dtype=float)
+ecl = np.zeros([int(cycle_vals.max()),5],dtype=float) # set up ecl array
 
 i = 0
 while i < (cycle_vals.max()-1):
-# while i < 10:
     i += 1
     if i in cycle1:
-      # print('processing eclipse no. =',i)
       if i == 33 or i == 86 or i ==93 or i == 146 or i ==149 or i==152 or i ==153 or i == 155:  # these eclipses are bad
          continue
       c_range = cycle1 == i
       x_range = x[c_range]
       y_range = y[c_range]
-      #tfloor = int(x_range.min())
-      #x_range -= tfloor
       min_arg = np.argmin(y_range)
       t_min = x_range[min_arg]
       y_range -= y_range.max()
@@ -113,7 +103,6 @@ while i < (cycle_vals.max()-1):
       within_max = yr > fwtm
       x_fwtm = x_range[within_max]
       y_fwtm = yr[within_max]
-
     # Gaussian fit
     # Initial guesses
       amp = yr[min_arg]
@@ -121,10 +110,6 @@ while i < (cycle_vals.max()-1):
       wid = est_fwhm(x_fwtm, y_fwtm) * gaussian_fwhm_to_sigma
       init_vals = [amp ,cen, wid]
       best_vals, covar = curve_fit(gaussian, x_fwtm, y_fwtm, p0=init_vals)
-
-      # print('best vals ',best_vals)
-      # print('covar',covar)
-    
 
     # Plot results of gaussian fits
       '''
@@ -141,7 +126,6 @@ while i < (cycle_vals.max()-1):
       ecl[i,3] +=best_vals[0] # amplitude
       ecl[i,4] += best_vals[2] # width
 
-
     # scale y values to y.min
       '''
       print('y[c_range]',y[c_range])
@@ -154,30 +138,35 @@ while i < (cycle_vals.max()-1):
 # remove rows in ecl array with all zero entries
 ecl = ecl[~np.all(ecl==0, axis=1)]
 
+# fit line to eclipse times
+
+z = np.polyfit(ecl[:,0], ecl[:,1], 1)
+print('z',z)
+print('z0',z[0])
+print('z1',z[1])
+t0 = z[1] +z[0] + tfloor # time of first eclipse
+
 s = ecl.shape[0]
-print('ecl',ecl)
-sys.exit()
-ave_period = (ecl[s-1,1] - ecl[0,1])/(ecl[s-1,0]-1)
-print('ave period (days)          = ',ave_period)
-print('ave period (hours)          = ',ave_period*24)
-print('ave period (mins)          = ',1440*ave_period)
-print('Lomb Scargle period (mins) = ',1440*period_time)
+print('s= ',s)
+print('ave period (days)          = ',z[0])
+print('Lomb Scargle period = ',period_time)
+print('time of ecl 0',ecl[0,1])
+print('tfloor = ',tfloor)
+print('Time of first eclipse',t0)
 
+p = np.poly1d(z)
 
-# plot eclipse times vs time
+# plot eclipse times vs fit
 '''
 plt.figure(figsize=(20,10))
-plt.plot(ecl[0:s-1,1],ecl[0:s-1,0], 'ro')
-plt.xlim(0.1,28.) 
+plt.plot(ecl[:,0],ecl[:,1], 'ro')
+plt.plot(ecl[:,0],p(ecl[:,0]))
 plt.show()
 '''
-
-
 # Create revised phase array
 
-phase1 = (x-ecl[0,1])/ave_period
+phase1 = (x-z[1])/z[0]
 phase1 = np.mod(phase1,1)
-
 masked_y = y.copy()
 
 start_i = 0
@@ -200,17 +189,48 @@ plt.plot(phase1,masked_y,'-', lw=0.4 )
 # plt.scatter(phase1,y,s=5)
 # plt.scatter(phase1+1,y,s=5)
 # plt.xlim(0.01,1.99)
-
+'''
 plt.plot(x,y,'b-', lw=0.4 )
 plt.plot(x,masked_y,'g-', lw=0.4 )
 
 plt.show()
+''' 
 
-print('ecl[0:10,1],ecl[0:10,0]',ecl[0:10,1],ecl[0:10,0])
-# print('x 1-10',x[0:10])
-# print('phase1 1-10',phase1[0:10])
-
-# np.savetxt("eclipse_times.txt",ecl)
-# print("phase1 1-10",phase1[0:9])
+# Save the log file
 log = np.stack((x,y,e),axis=-1)
 np.savetxt("ec21178.log",log)
+
+#Save the ecl array
+np.savetxt("eclipse_times.txt",ecl)
+
+# Plot eclipse Amplitude and Depths to see if any trend
+
+fig = plt.figure(figsize=(20,10))
+ax1 = fig.add_axes([0.1, 0.5, 0.8, 0.4])
+ax2 = fig.add_axes([0.1, 0.1, 0.8, 0.4])
+
+ax1.plot(ecl[:,0],ecl[:,3], '-', marker='o')
+ax1.text(.5,.9,'Amplitude (FWHM)',
+        horizontalalignment='center',
+        transform=ax1.transAxes)
+ax2.plot(ecl[:,0],ecl[:,4], '-', marker='o')
+ax2.text(.5,.9,'Depth',
+        horizontalalignment='center',
+        transform=ax2.transAxes)
+ax2.set_xlabel('eclipse number')        
+plt.show()
+
+# Plot both to see if a correlation 
+z = np.polyfit(ecl[:,3], ecl[:,4], 1)
+zt0 = str(z[0])
+p = np.poly1d(z)
+fit = p(ecl[:,3])
+
+plt.figure(figsize=(20,10))
+plt.scatter(ecl[:,3], ecl[:,4], marker='o')
+plt.plot(ecl[:,3], fit, color='r', label='fit')
+plt.title('Plot of Amplitude versus Depth')
+plt.text(300, 0.014, 'Slope of Fit = (%a)'%(zt0))
+plt.xlabel('Amplitude')
+plt.ylabel('FWHM')
+plt.show()

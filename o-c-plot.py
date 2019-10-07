@@ -8,7 +8,7 @@
 
 import numpy as np
 from numpy import exp, linspace,random, math
-from astropy.stats import LombScargle
+from astropy.timeseries import LombScargle
 import matplotlib.pyplot as plt
 import scipy
 from scipy.optimize import curve_fit
