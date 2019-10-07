@@ -29,7 +29,9 @@ plt.show()
 '''
 # Subtract linear fit
 
-z = np.polyfit(x, y, 1)
+z = np.polyfit(x, y, 2)
+print('z',z)
+sys.exit()
 p = np.poly1d(z)
 y -= p(x)
 
@@ -38,6 +40,7 @@ plt.figure(figsize=(20,10))
 plt.plot(x,y)
 plt.show()
 '''
+
 '''
 if period:
     # x *= 1440.                                 # Change to minutes
@@ -65,7 +68,7 @@ period = 0.15452941957207128
 t1 = 0.196946800588
 ts2 = ts.fold(period,t1)
 ts2.y = np.absolute(ts2.y)
-ts3 = ts2.bin(300,'mean')
+ts3 = ts2.bin(400,'mean')
 
 
 plt.figure(figsize=(16,8))

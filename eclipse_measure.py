@@ -153,7 +153,10 @@ while i < (cycle_vals.max()-1):
 
 # remove rows in ecl array with all zero entries
 ecl = ecl[~np.all(ecl==0, axis=1)]
+
 s = ecl.shape[0]
+print('ecl',ecl)
+sys.exit()
 ave_period = (ecl[s-1,1] - ecl[0,1])/(ecl[s-1,0]-1)
 print('ave period (days)          = ',ave_period)
 print('ave period (hours)          = ',ave_period*24)
