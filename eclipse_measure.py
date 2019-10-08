@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 
+# This program analyses the TESS light curve of EC 21178-5417
+# Author D Sahman October 2019
+
 import sys
 import numpy as np
 import astropy
 import scipy
-from numpy import exp, linspace,random, math
-from astropy.timeseries import LombScargle
-import matplotlib.pyplot as plt
-import scipy
-from scipy.optimize import curve_fit
 import glob
+import hipercam as hcam
+import matplotlib.pyplot as plt
+from numpy import exp, linspace, random, math
+from astropy.timeseries import LombScargle
+from scipy.optimize import curve_fit
 from hipercam.hlog import Hlog
+from hipercam.hlog import Tseries
+from scipy import interpolate
 from astropy.convolution import convolve, Box1DKernel
 from astropy.stats import gaussian_fwhm_to_sigma
 
@@ -56,23 +61,21 @@ period     = True
 x,y,e = np.loadtxt(lcfile, unpack=True, usecols=(0,1,2))
 
 if period:
-    # x *= 1440.                                 # Change to minutes
-    ls    = LombScargle(x,y,e)                 # Create periodogram
+    # x *= 1440.                                # Change to minutes
+    ls    = LombScargle(x,y,e)                  # Create periodogram
     fmax  = 30.                                 # Set upper frequency (cycles/min) limit 
-    nfreq = int(1000*fmax*(x.max()-x.min()))     # Calculate number of frequency steps, oversample x10
-    freq  = np.linspace(fmax/nfreq,fmax,nfreq) # Create frequency array
+    nfreq = int(1000*fmax*(x.max()-x.min()))    # Calculate number of frequency steps, oversample x10
+    freq  = np.linspace(fmax/nfreq,fmax,nfreq)  # Create frequency array
     #freq = np.linspace(0.1,5,100)
     power = ls.power(freq)                      # Calculate periodogram powers            
-    fmax  = freq[power==power.max()]        # Calculate peak in periodogram
+    fmax  = freq[power==power.max()]            # Calculate peak in periodogram
 
     # Plot Periodogram
-    
+    '''
     plt.figure(figsize=(20,10))
     plt.plot(freq, power)
     plt.show()
-    
-
-print("Peak in periodogram at cycles / day. Period of days",1/fmax) 
+    '''
 period_time = 1/fmax
 phase = fmax*x
 phase = np.mod(phase,1)
@@ -84,7 +87,7 @@ cycle_vals = np.unique(cycle1)
 
 # loop over each cycle and fit gaussian
 
-ecl = np.zeros([int(cycle_vals.max()),5],dtype=float) # set up ecl array
+ecl = np.zeros([int(cycle_vals.max()),5],dtype=float) # set up ecl array and fill with zeroes
 
 i = 0
 while i < (cycle_vals.max()-1):
@@ -138,73 +141,80 @@ while i < (cycle_vals.max()-1):
 # remove rows in ecl array with all zero entries
 ecl = ecl[~np.all(ecl==0, axis=1)]
 
+#Save the ecl array
+np.savetxt("eclipse_times.txt",ecl)
+
 # fit line to eclipse times
 
 z = np.polyfit(ecl[:,0], ecl[:,1], 1)
-print('z',z)
-print('z0',z[0])
-print('z1',z[1])
-t0 = z[1] +z[0] + tfloor # time of first eclipse
-
+p = np.poly1d(z)
+t0 = z[1] + z[0] + tfloor # time of first eclipse using fit
 s = ecl.shape[0]
-print('s= ',s)
-print('ave period (days)          = ',z[0])
-print('Lomb Scargle period = ',period_time)
+
+# Print results of fit
+
+print('z',z)
+print('shape of ecl array = ',s)
+print('period from linear fit (days)          = ',z[0])
+print('Lomb Scargle period (days) = ',period_time)
 print('time of ecl 0',ecl[0,1])
 print('tfloor = ',tfloor)
 print('Time of first eclipse',t0)
 
+# Plot O-C curve
+
+plt.figure(figsize=(20,10))
+plt.scatter(ecl[:,0],(ecl[:,1]-p(ecl[:,0]))*86400)
+plt.axhline(y=0,color='black')
+plt.title('EC21178   O-C Plot')
+plt.xlabel('Eclipse No.')
+plt.ylabel('Time (sec)')
+plt.show()
+
+# Measure Noise by subtracting binned average light curve 
+# Create Hipercam Tseries object to do folding
+
+mask = np.zeros_like(x).astype('int')
+ts = Tseries(x,y,e,mask)
+ts2 = ts.fold(z[0],t0)
+ts3 = ts2.bin(20,'mean')
+f = interpolate.interp1d(ts3.t,ts3.y,kind='linear',fill_value="extrapolate")
+tsnew = ts.t.copy()
+ph = np.mod(((tsnew + (z[0]/2) - t0)) / z[0],1) - 0.5
+ts.y -= f(ph)
+
+# Plot noise curve - repeat two periods for clarity
+'''
+plt.figure(figsize=(16,8))
+plt.plot(ts.t,ts.y)
+plt.title('Residual Noise')plt.title('EC21178   O-C Plot')
+plt.xlabel('Time')
+plt.ylabel('Counts')
+
+plt.show()
+'''
+# Subtract linear fit from noise
+
+z = np.polyfit(ts.t, ts.y, 1)
 p = np.poly1d(z)
+ts.y -= p(ts.t)
+ts2 = ts.fold(z[0],t0) 
+ts3 = ts2.bin(40,'mean') 
 
-# plot eclipse times vs fit
+# Plot the folded noise light curve
 '''
-plt.figure(figsize=(20,10))
-plt.plot(ecl[:,0],ecl[:,1], 'ro')
-plt.plot(ecl[:,0],p(ecl[:,0]))
+plt.figure(figsize=(12,6))
+plt.plot(ts3.t,ts3.y)
+plt.plot(ts3.t+1.0,ts3.y)
+plt.xlim(-0.5,1.5)
+plt.title('Binned and Folded Residual Noise')
+plt.xlabel('Phase')
+plt.ylabel('Counts')
+
 plt.show()
 '''
-# Create revised phase array
-
-phase1 = (x-z[1])/z[0]
-phase1 = np.mod(phase1,1)
-masked_y = y.copy()
-
-start_i = 0
-for i in range(len(masked_y)-1):
-  if phase1[i] < 0.9 and phase1[i+1] > 0.9:
-    start_i = i+1
-  if phase1[i] < 0.1 and phase[i+1] > 0.1:
-    start_value = masked_y[start_i-1]
-    finish_value = masked_y[i+1]
-    n_i = i - start_i + 2
-    range_values = finish_value - start_value
-    inc = range_values/n_i
-    for j in range(n_i):
-      masked_y[start_i + j] = start_value + inc*j
-'''
-plt.figure(figsize=(20,10))
-plt.plot(phase1,y, '-', marker='o')
-plt.plot(phase1,masked_y,'-', lw=0.4 )
-'''
-# plt.scatter(phase1,y,s=5)
-# plt.scatter(phase1+1,y,s=5)
-# plt.xlim(0.01,1.99)
-'''
-plt.plot(x,y,'b-', lw=0.4 )
-plt.plot(x,masked_y,'g-', lw=0.4 )
-
-plt.show()
-''' 
-
-# Save the log file
-log = np.stack((x,y,e),axis=-1)
-np.savetxt("ec21178.log",log)
-
-#Save the ecl array
-np.savetxt("eclipse_times.txt",ecl)
-
 # Plot eclipse Amplitude and Depths to see if any trend
-
+'''
 fig = plt.figure(figsize=(20,10))
 ax1 = fig.add_axes([0.1, 0.5, 0.8, 0.4])
 ax2 = fig.add_axes([0.1, 0.1, 0.8, 0.4])
@@ -220,17 +230,20 @@ ax2.text(.5,.9,'Depth',
 ax2.set_xlabel('eclipse number')        
 plt.show()
 
-# Plot both to see if a correlation 
-z = np.polyfit(ecl[:,3], ecl[:,4], 1)
-zt0 = str(z[0])
-p = np.poly1d(z)
+# Plot Amplitude vs Depth and fit linear regression to see if 
+# there is a correlation 
+
+q = np.polyfit(ecl[:,3], ecl[:,4], 1)
+qt0 = str(q[0])
+p = np.poly1d(q)
 fit = p(ecl[:,3])
 
 plt.figure(figsize=(20,10))
 plt.scatter(ecl[:,3], ecl[:,4], marker='o')
 plt.plot(ecl[:,3], fit, color='r', label='fit')
-plt.title('Plot of Amplitude versus Depth')
-plt.text(300, 0.014, 'Slope of Fit = (%a)'%(zt0))
+plt.title('Scatter Plot of Amplitude versus Depth')
+plt.text(300, 0.014, 'Slope of Fit = (%a)'%(qt0))
 plt.xlabel('Amplitude')
 plt.ylabel('FWHM')
 plt.show()
+'''
