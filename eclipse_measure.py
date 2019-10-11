@@ -11,11 +11,10 @@ import glob
 import hipercam as hcam
 import matplotlib.pyplot as plt
 from numpy import exp, linspace, random, math
-from astropy.timeseries import LombScargle
+from astropy.stats import LombScargle
 from scipy.optimize import curve_fit
-from hipercam.hlog import Hlog
-from hipercam.hlog import Tseries
 from scipy import interpolate
+from hipercam.hlog import Hlog, Tseries
 from astropy.convolution import convolve, Box1DKernel
 from astropy.stats import gaussian_fwhm_to_sigma
 
@@ -184,15 +183,15 @@ ph = np.mod(((tsnew + (z[0]/2) - t0)) / z[0],1) - 0.5
 ts.y -= f(ph)
 
 # Plot noise curve - repeat two periods for clarity
-'''
+
 plt.figure(figsize=(16,8))
 plt.plot(ts.t,ts.y)
-plt.title('Residual Noise')plt.title('EC21178   O-C Plot')
+plt.title('Residual Noise')
 plt.xlabel('Time')
 plt.ylabel('Counts')
 
 plt.show()
-'''
+
 # Subtract linear fit from noise
 
 z = np.polyfit(ts.t, ts.y, 1)
@@ -202,7 +201,7 @@ ts2 = ts.fold(z[0],t0)
 ts3 = ts2.bin(40,'mean') 
 
 # Plot the folded noise light curve
-'''
+
 plt.figure(figsize=(12,6))
 plt.plot(ts3.t,ts3.y)
 plt.plot(ts3.t+1.0,ts3.y)
@@ -212,9 +211,9 @@ plt.xlabel('Phase')
 plt.ylabel('Counts')
 
 plt.show()
-'''
+
 # Plot eclipse Amplitude and Depths to see if any trend
-'''
+
 fig = plt.figure(figsize=(20,10))
 ax1 = fig.add_axes([0.1, 0.5, 0.8, 0.4])
 ax2 = fig.add_axes([0.1, 0.1, 0.8, 0.4])
@@ -246,4 +245,3 @@ plt.text(300, 0.014, 'Slope of Fit = (%a)'%(qt0))
 plt.xlabel('Amplitude')
 plt.ylabel('FWHM')
 plt.show()
-'''
