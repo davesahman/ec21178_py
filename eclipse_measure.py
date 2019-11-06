@@ -17,6 +17,7 @@ from scipy import interpolate
 from hipercam.hlog import Hlog, Tseries
 from astropy.convolution import convolve, Box1DKernel
 from astropy.stats import gaussian_fwhm_to_sigma
+from scipy.stats import pearsonr
 
 np.set_printoptions(precision=12)
 
@@ -237,11 +238,19 @@ qt0 = str(q[0])
 p = np.poly1d(q)
 fit = p(ecl[:,3])
 
+# Calculate Pearson regression coefficient
+
+corr, _ = pearsonr(ecl[:,3], ecl[:,4])
+print('Pearsons correlation: %.3f' % corr)
+
+
 plt.figure(figsize=(20,10))
 plt.scatter(ecl[:,3], ecl[:,4], marker='o')
 plt.plot(ecl[:,3], fit, color='r', label='fit')
 plt.title('Scatter Plot of Amplitude versus Depth')
 plt.text(300, 0.014, 'Slope of Fit = (%a)'%(qt0))
+plt.text(300, 0.0135, 'Pearsons Coefficient= (%a)'%(corr))
+
 plt.xlabel('Amplitude')
 plt.ylabel('FWHM')
 plt.show()
