@@ -21,8 +21,10 @@ from scipy.stats import pearsonr
 
 np.set_printoptions(precision=12)
 
-# Set up gaussian model
 def gaussian(x, amp, cen, wid):
+    """
+    Set up Gaussain model
+    """
     return amp * exp (-(x-cen)**2/(2*wid**2))
 
 def est_fwhm(x, y):
@@ -59,6 +61,15 @@ device     = '1/xs'
 period     = True
 
 x,y,e = np.loadtxt(lcfile, unpack=True, usecols=(0,1,2))
+
+# Plot raw light curve
+
+plt.figure(figsize=(20,10))
+plt.plot(x,y)
+plt.title('EC21178 TESS Raw Light Curve')
+plt.xlabel('Time (HJD)')
+plt.ylabel('FLux')
+plt.show()
 
 if period:
     # x *= 1440.                                # Change to minutes
@@ -183,10 +194,12 @@ tsnew = ts.t.copy()
 ph = np.mod(((tsnew + (z[0]/2) - t0)) / z[0],1) - 0.5
 ts.y -= f(ph)
 
-# Plot noise curve - repeat two periods for clarity
+# Plot noise curve
 
+corr, _ = pearsonr(ecl[:,0], ecl[:,3])
 plt.figure(figsize=(16,8))
 plt.plot(ts.t,ts.y)
+plt.text(1, 80, 'Pearsons Coefficient= (%a)'%(corr))
 plt.title('Residual Noise')
 plt.xlabel('Time')
 plt.ylabel('Counts')
@@ -201,9 +214,9 @@ ts.y -= p(ts.t)
 ts2 = ts.fold(z[0],t0) 
 ts3 = ts2.bin(40,'mean') 
 
-# Plot the folded noise light curve
+# Plot the folded noise light curve - repeat two periods for clarity
 
-plt.figure(figsize=(12,6))
+plt.figure(figsize=(16,8))
 plt.plot(ts3.t,ts3.y)
 plt.plot(ts3.t+1.0,ts3.y)
 plt.xlim(-0.5,1.5)
@@ -215,6 +228,9 @@ plt.show()
 
 # Plot eclipse Amplitude and Depths to see if any trend
 
+corr1, _ = pearsonr(ecl[:,0], ecl[:,3])
+corr2, _ = pearsonr(ecl[:,0], ecl[:,4])
+
 fig = plt.figure(figsize=(20,10))
 ax1 = fig.add_axes([0.1, 0.5, 0.8, 0.4])
 ax2 = fig.add_axes([0.1, 0.1, 0.8, 0.4])
@@ -223,10 +239,16 @@ ax1.plot(ecl[:,0],ecl[:,3], '-', marker='o')
 ax1.text(.5,.9,'Amplitude (FWHM)',
         horizontalalignment='center',
         transform=ax1.transAxes)
+ax1.text(.8,.85,'Pearsons coefficient= (%a)'%(corr1),
+        horizontalalignment='center',
+        transform=ax1.transAxes)       
 ax2.plot(ecl[:,0],ecl[:,4], '-', marker='o')
 ax2.text(.5,.9,'Depth',
         horizontalalignment='center',
         transform=ax2.transAxes)
+ax2.text(.8,.85,'Pearsons coefficient= (%a)'%(corr2),
+        horizontalalignment='center',
+        transform=ax2.transAxes)          
 ax2.set_xlabel('eclipse number')        
 plt.show()
 
@@ -240,8 +262,8 @@ fit = p(ecl[:,3])
 
 # Calculate Pearson regression coefficient
 
-corr, _ = pearsonr(ecl[:,3], ecl[:,4])
-print('Pearsons correlation: %.3f' % corr)
+corr3, _ = pearsonr(ecl[:,3], ecl[:,4])
+print('Pearsons correlation: %.3f' % corr3)
 
 
 plt.figure(figsize=(20,10))
@@ -249,7 +271,7 @@ plt.scatter(ecl[:,3], ecl[:,4], marker='o')
 plt.plot(ecl[:,3], fit, color='r', label='fit')
 plt.title('Scatter Plot of Amplitude versus Depth')
 plt.text(300, 0.014, 'Slope of Fit = (%a)'%(qt0))
-plt.text(300, 0.0135, 'Pearsons Coefficient= (%a)'%(corr))
+plt.text(300, 0.0135, 'Pearsons Coefficient= (%a)'%(corr3))
 
 plt.xlabel('Amplitude')
 plt.ylabel('FWHM')
