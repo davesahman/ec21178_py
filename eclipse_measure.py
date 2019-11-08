@@ -11,7 +11,7 @@ import glob
 import hipercam as hcam
 import matplotlib.pyplot as plt
 from numpy import exp, linspace, random, math
-from astropy.stats import LombScargle
+from astropy.timeseries import LombScargle
 from scipy.optimize import curve_fit
 from scipy import interpolate
 from hipercam.hlog import Hlog, Tseries
@@ -64,7 +64,7 @@ x,y,e = np.loadtxt(lcfile, unpack=True, usecols=(0,1,2))
 
 # Plot raw light curve
 
-plt.figure(figsize=(20,10))
+plt.figure(figsize=(16,8))
 plt.plot(x,y)
 plt.title('EC21178 TESS Raw Light Curve')
 plt.xlabel('Time (HJD)')
@@ -83,7 +83,7 @@ if period:
 
     # Plot Periodogram
     '''
-    plt.figure(figsize=(20,10))
+    plt.figure(figsize=(16,8))
     plt.plot(freq, power)
     plt.show()
     '''
@@ -127,7 +127,7 @@ while i < (cycle_vals.max()-1):
 
     # Plot results of gaussian fits
       '''
-      plt.figure(figsize=(20,10))
+      plt.figure(figsize=(16,8))
       plt.plot(x_fwtm, gaussian(x_fwtm, *best_vals), label="fit")
       plt.plot(x_range, yr, label="data")
       plt.legend()
@@ -174,7 +174,7 @@ print('Time of first eclipse',t0)
 
 # Plot O-C curve
 
-plt.figure(figsize=(20,10))
+plt.figure(figsize=(16,8))
 plt.scatter(ecl[:,0],(ecl[:,1]-p(ecl[:,0]))*86400)
 plt.axhline(y=0,color='black')
 plt.title('EC21178   O-C Plot')
@@ -231,7 +231,7 @@ plt.show()
 corr1, _ = pearsonr(ecl[:,0], ecl[:,3])
 corr2, _ = pearsonr(ecl[:,0], ecl[:,4])
 
-fig = plt.figure(figsize=(20,10))
+fig = plt.figure(figsize=(16,8))
 ax1 = fig.add_axes([0.1, 0.5, 0.8, 0.4])
 ax2 = fig.add_axes([0.1, 0.1, 0.8, 0.4])
 
@@ -252,21 +252,16 @@ ax2.text(.8,.85,'Pearsons coefficient= (%a)'%(corr2),
 ax2.set_xlabel('eclipse number')        
 plt.show()
 
-# Plot Amplitude vs Depth and fit linear regression to see if 
-# there is a correlation 
+# Plot Amplitude vs Depth and fit linear regression 
+# Show Pearsons correlation coefficient
 
 q = np.polyfit(ecl[:,3], ecl[:,4], 1)
 qt0 = str(q[0])
 p = np.poly1d(q)
 fit = p(ecl[:,3])
-
-# Calculate Pearson regression coefficient
-
 corr3, _ = pearsonr(ecl[:,3], ecl[:,4])
-print('Pearsons correlation: %.3f' % corr3)
 
-
-plt.figure(figsize=(20,10))
+plt.figure(figsize=(16,8))
 plt.scatter(ecl[:,3], ecl[:,4], marker='o')
 plt.plot(ecl[:,3], fit, color='r', label='fit')
 plt.title('Scatter Plot of Amplitude versus Depth')
