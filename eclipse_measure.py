@@ -12,6 +12,7 @@ import hipercam as hcam
 import matplotlib.pyplot as plt
 from numpy import exp, linspace, random, math
 from astropy.timeseries import LombScargle
+from astropy.time import Time
 from scipy.optimize import curve_fit
 from scipy import interpolate
 from hipercam.hlog import Hlog, Tseries
@@ -36,16 +37,6 @@ def est_fwhm(x, y):
     x_within_halfmax = x[within_halfmax]
     return x_within_halfmax.max() - x_within_halfmax.min()
 
-def est_fwtm(x, y):
-    """
-    Estimate x range of a Gaussian - within tenth of max
-    """
-    fwtm = 0.1*y.max()
-    within_max = y > fwtm
-    x_fwtm = x[within_max]
-    y_fwtm = y[within_max]
-    return x_fwtm, y_fwtm
-
 def find_nearest(a, a0):
     """
     Finds the element in the array `a` closest to the scalar value `a0`
@@ -67,9 +58,12 @@ x,y,e = np.loadtxt(lcfile, unpack=True, usecols=(0,1,2))
 plt.figure(figsize=(16,8))
 plt.plot(x,y)
 plt.title('EC21178 TESS Raw Light Curve')
-plt.xlabel('Time (HJD)')
+plt.xlabel('Time (BJD-TDB)')
 plt.ylabel('FLux')
 plt.show()
+
+# Find an approximate period using a
+# Lomb-Scargle periodogram
 
 if period:
     # x *= 1440.                                # Change to minutes
@@ -87,14 +81,15 @@ if period:
     plt.plot(freq, power)
     plt.show()
     '''
-period_time = 1/fmax
-phase = fmax*x
-phase = np.mod(phase,1)
 
-tfloor = period_time * int(x[0]/period_time)
+period_time = 1/fmax # derive the period
+phase = fmax*x # calculate the phase of each data point
+phase = np.mod(phase,1) # convert the phase to lie between 0 and 1
+
+tfloor = period_time * int(x[0]/period_time) 
 x -= tfloor # subtract integer of first period 
-cycle1 = np.floor_divide(x,period_time)
-cycle_vals = np.unique(cycle1)
+cycle1 = np.floor_divide(x,period_time) # calculate which cycle each data point lies in
+cycle_vals = np.unique(cycle1) #  calculate the number of unique cycle values ie eclipses
 
 # loop over each cycle and fit gaussian
 
@@ -165,12 +160,12 @@ s = ecl.shape[0]
 # Print results of fit
 
 print('z',z)
-print('shape of ecl array = ',s)
-print('period from linear fit (days)          = ',z[0])
-print('Lomb Scargle period (days) = ',period_time)
-print('time of ecl 0',ecl[0,1])
-print('tfloor = ',tfloor)
-print('Time of first eclipse',t0)
+print('shape of ecl array              = ',s)
+print('period from linear fit (days)   = ',z[0])
+print('Lomb Scargle period (days)      = ',period_time)
+print('time of ecl 0                   = ',ecl[0,1])
+print('tfloor                          = ',tfloor)
+print('Time of first eclipse           = ',t0)
 
 # Plot O-C curve
 
