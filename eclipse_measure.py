@@ -54,14 +54,14 @@ period     = True
 x,y,e = np.loadtxt(lcfile, unpack=True, usecols=(0,1,2))
 
 # Plot raw light curve
-
+'''
 plt.figure(figsize=(16,8))
 plt.plot(x,y)
 plt.title('EC21178 TESS Raw Light Curve')
 plt.xlabel('Time (BJD-TDB)')
 plt.ylabel('FLux')
 plt.show()
-
+'''
 # Find an approximate period using a
 # Lomb-Scargle periodogram
 
@@ -146,29 +146,43 @@ while i < (cycle_vals.max()-1):
 
 # remove rows in ecl array with all zero entries
 ecl = ecl[~np.all(ecl==0, axis=1)]
+s = ecl.shape[0]
 
 #Save the ecl array
 np.savetxt("eclipse_times.txt",ecl)
 
 # fit line to eclipse times
 
-z = np.polyfit(ecl[:,0], ecl[:,1], 1)
-p = np.poly1d(z)
-t0 = z[1] + z[0] + tfloor # time of first eclipse using fit
-s = ecl.shape[0]
+z = np.polyfit(ecl[:,0], ecl[:,1], 1, cov=True)
+p = np.poly1d(z[0])
 
-# Print results of fit
+print('z[0]=',z[0])
+print('z[1]=',z[1])
+print('z=',z)
 
-print('z',z)
-print('shape of ecl array              = ',s)
-print('period from linear fit (days)   = ',z[0])
+
+# Calculate zeropoint eclipse number using Stu's method
+
+c0 = np.rint(-z[1][0,1]/z[1][0,0])
+ephem = p(c0) + tfloor
+t0 = p(1) + tfloor
+epheme = np.sqrt(z[1][1,1])
+periode = np.sqrt(z[1][0,0])
+
+# Print key results
+
+print('Optimal eclipse number          = ',c0)
+print('Ephemeris for publication       = ',ephem)
+print('Error Ephemeris for publn       = ',epheme)
+print('Derived Time of first eclipse   = ',t0)
+print('Time of ecl 0                   = ',ecl[0,1]+tfloor)
+print('Shape of ecl array              = ',s)
+print('Period from linear fit (days)   = ',z[0][0])
+print('Error on Period from fit(days)   = ',periode)
 print('Lomb Scargle period (days)      = ',period_time)
-print('time of ecl 0                   = ',ecl[0,1])
-print('tfloor                          = ',tfloor)
-print('Time of first eclipse           = ',t0)
 
 # Plot O-C curve
-
+'''
 plt.figure(figsize=(16,8))
 plt.scatter(ecl[:,0],(ecl[:,1]-p(ecl[:,0]))*86400)
 plt.axhline(y=0,color='black')
@@ -176,21 +190,51 @@ plt.title('EC21178   O-C Plot')
 plt.xlabel('Eclipse No.')
 plt.ylabel('Time (sec)')
 plt.show()
-
+'''
 # Measure Noise by subtracting binned average light curve 
 # Create Hipercam Tseries object to do folding
 
 mask = np.zeros_like(x).astype('int')
 ts = Tseries(x,y,e,mask)
-ts2 = ts.fold(z[0],t0)
-ts3 = ts2.bin(20,'mean')
+ts2 = ts.fold(z[0][0],t0)
+ts3 = ts2.bin(1000,'mean')
+#print('ts2',ts2)
+#print('ts3',ts3)
+#plt.figure(figsize=(10,6))
+#plt.plot(ts2.t,ts2.y)
+#plt.plot(ts3.t,ts3.y)
+plt.plot(ts3.t-0.5,ts3.y)
+plt.plot(ts3.t+0.5,ts3.y)
+# plt.xlim(-0.5,1.5)
+# plt.title('EC21178 Folded Binned Light Curve')
+plt.xlabel('Phase')
+plt.ylabel('FLux')
+plt.show()
+
+sys.exit()
+
+
 f = interpolate.interp1d(ts3.t,ts3.y,kind='linear',fill_value="extrapolate")
 tsnew = ts.t.copy()
-ph = np.mod(((tsnew + (z[0]/2) - t0)) / z[0],1) - 0.5
+ph = np.mod(((tsnew + (z[0][0]/2) - t0)) / z[0][0],1) - 0.5
 ts.y -= f(ph)
 
-# Plot noise curve
 
+ls    = LombScargle(ts.t,ts.y)                  # Create periodogram
+fmax  = 30.                                 # Set upper frequency (cycles/min) limit 
+nfreq = int(1000*fmax*(ts.t.max()-ts.t.min()))    # Calculate number of frequency steps, oversample x10
+freq  = np.linspace(fmax/nfreq,fmax,nfreq)  # Create frequency array
+#freq = np.linspace(0.1,5,100)
+power = ls.power(freq)                      # Calculate periodogram powers            
+fmax  = freq[power==power.max()]            # Calculate peak in periodogra
+# Plot Periodogram
+'''
+plt.figure(figsize=(16,8))
+plt.plot(freq, power)
+plt.show()
+'''
+# Plot noise curve
+'''
 corr, _ = pearsonr(ecl[:,0], ecl[:,3])
 plt.figure(figsize=(16,8))
 plt.plot(ts.t,ts.y)
@@ -198,9 +242,8 @@ plt.text(1, 80, 'Pearsons Coefficient= (%a)'%(corr))
 plt.title('Residual Noise')
 plt.xlabel('Time')
 plt.ylabel('Counts')
-
 plt.show()
-
+'''
 # Subtract linear fit from noise
 
 z = np.polyfit(ts.t, ts.y, 1)
@@ -218,7 +261,6 @@ plt.xlim(-0.5,1.5)
 plt.title('Binned and Folded Residual Noise')
 plt.xlabel('Phase')
 plt.ylabel('Counts')
-
 plt.show()
 
 # Plot eclipse Amplitude and Depths to see if any trend
@@ -262,7 +304,7 @@ plt.plot(ecl[:,3], fit, color='r', label='fit')
 plt.title('Scatter Plot of Amplitude versus Depth')
 plt.text(300, 0.014, 'Slope of Fit = (%a)'%(qt0))
 plt.text(300, 0.0135, 'Pearsons Coefficient= (%a)'%(corr3))
-
 plt.xlabel('Amplitude')
 plt.ylabel('FWHM')
+plt.show()
 plt.show()
