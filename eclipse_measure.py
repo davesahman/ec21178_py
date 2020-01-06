@@ -200,19 +200,18 @@ ts2 = ts.fold(z[0][0],t0)
 ts3 = ts2.bin(1000,'mean')
 #print('ts2',ts2)
 #print('ts3',ts3)
+'''
 #plt.figure(figsize=(10,6))
 #plt.plot(ts2.t,ts2.y)
 #plt.plot(ts3.t,ts3.y)
 plt.plot(ts3.t-0.5,ts3.y)
 plt.plot(ts3.t+0.5,ts3.y)
 # plt.xlim(-0.5,1.5)
-# plt.title('EC21178 Folded Binned Light Curve')
+plt.title('EC21178 Folded Binned Light Curve')
 plt.xlabel('Phase')
 plt.ylabel('FLux')
 plt.show()
-
-sys.exit()
-
+'''
 
 f = interpolate.interp1d(ts3.t,ts3.y,kind='linear',fill_value="extrapolate")
 tsnew = ts.t.copy()
@@ -307,4 +306,4 @@ plt.text(300, 0.0135, 'Pearsons Coefficient= (%a)'%(corr3))
 plt.xlabel('Amplitude')
 plt.ylabel('FWHM')
 plt.show()
-plt.show()
+
