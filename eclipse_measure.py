@@ -11,6 +11,7 @@ import glob
 import hipercam as hcam
 import matplotlib.pyplot as plt
 from numpy import exp, linspace, random, math
+from stingray import Lightcurve, Powerspectrum, AveragedPowerspectrum
 from astropy.timeseries import LombScargle
 from astropy.time import Time
 from scipy.optimize import curve_fit
@@ -24,7 +25,7 @@ np.set_printoptions(precision=12)
 
 def gaussian(x, amp, cen, wid):
     """
-    Set up Gaussain model
+    Set up Gaussian model
     """
     return amp * exp (-(x-cen)**2/(2*wid**2))
 
@@ -52,16 +53,44 @@ device     = '1/xs'
 period     = True
 
 x,y,e = np.loadtxt(lcfile, unpack=True, usecols=(0,1,2))
+# x *= 1440. 
 
 # Plot raw light curve
-'''
+
 plt.figure(figsize=(16,8))
 plt.plot(x,y)
 plt.title('EC21178 TESS Raw Light Curve')
 plt.xlabel('Time (BJD-TDB)')
 plt.ylabel('FLux')
 plt.show()
+
+
+# Find the Average Power Spectrum using Stingray
 '''
+lc = Lightcurve(x,y)
+ps = AveragedPowerspectrum(lc,1.)
+#lin_rb_ps = ps.rebin(0.01, method='mean')
+fig, ax1 = plt.subplots(1,1,figsize=(9,6), sharex=True)
+ax1.plot(ps.freq, ps.power, lw=2, color='blue')
+ax1.set_xlabel("Frequency (Hz)")
+ax1.set_ylabel("Power (raw)")
+# ax1.set_yscale('log')
+ax1.tick_params(axis='x', labelsize=16)
+ax1.tick_params(axis='y', labelsize=16)
+ax1.tick_params(which='major', width=1.5, length=7)
+ax1.tick_params(which='minor', width=1.5, length=4)
+for axis in ['top', 'bottom', 'left', 'right']:
+    ax1.spines[axis].set_linewidth(1.5)
+plt.show()
+
+print(ps.freq)
+print(ps.power)
+print(ps.df)
+print(ps.m)
+print(ps.n)
+print(ps.nphots1)
+'''
+
 # Find an approximate period using a
 # Lomb-Scargle periodogram
 
@@ -89,12 +118,12 @@ phase = np.mod(phase,1) # convert the phase to lie between 0 and 1
 tfloor = period_time * int(x[0]/period_time) 
 x -= tfloor # subtract integer of first period 
 cycle1 = np.floor_divide(x,period_time) # calculate which cycle each data point lies in
-cycle_vals = np.unique(cycle1) #  calculate the number of unique cycle values ie eclipses
+cycle_vals = np.unique(cycle1) #  calculate the number of unique cycle values ie number of  eclipses
 
 # loop over each cycle and fit gaussian
 
 ecl = np.zeros([int(cycle_vals.max()),5],dtype=float) # set up ecl array and fill with zeroes
-
+cumy = 0
 i = 0
 while i < (cycle_vals.max()-1):
     i += 1
@@ -112,6 +141,9 @@ while i < (cycle_vals.max()-1):
       within_max = yr > fwtm
       x_fwtm = x_range[within_max]
       y_fwtm = yr[within_max]
+      print("y within 0.4",len(y_fwtm))
+      cumy +=len(y_fwtm)
+      avgy = cumy/i
     # Gaussian fit
     # Initial guesses
       amp = yr[min_arg]
@@ -123,12 +155,16 @@ while i < (cycle_vals.max()-1):
     # Plot results of gaussian fits
       '''
       plt.figure(figsize=(16,8))
-      plt.plot(x_fwtm, gaussian(x_fwtm, *best_vals), label="fit")
+      plt.plot(x_range, gaussian(x_range, *best_vals), label="fit")
       plt.plot(x_range, yr, label="data")
       plt.legend()
       plt.show()
+      
+      if i > 10:
+        print('average number of y values used =', avgy)
       '''
       
+
       ecl[i,0] +=i # number of eclipse
       ecl[i,1] +=best_vals[1] # centre of eclipse - need to add tfloor for true time
       ecl[i,2] +=np.sqrt(covar[1,1]) # error on centre
@@ -182,7 +218,7 @@ print('Error on Period from fit(days)   = ',periode)
 print('Lomb Scargle period (days)      = ',period_time)
 
 # Plot O-C curve
-'''
+
 plt.figure(figsize=(16,8))
 plt.scatter(ecl[:,0],(ecl[:,1]-p(ecl[:,0]))*86400)
 plt.axhline(y=0,color='black')
@@ -190,7 +226,7 @@ plt.title('EC21178   O-C Plot')
 plt.xlabel('Eclipse No.')
 plt.ylabel('Time (sec)')
 plt.show()
-'''
+
 # Measure Noise by subtracting binned average light curve 
 # Create Hipercam Tseries object to do folding
 
@@ -198,16 +234,15 @@ mask = np.zeros_like(x).astype('int')
 ts = Tseries(x,y,e,mask)
 ts2 = ts.fold(z[0][0],t0)
 ts3 = ts2.bin(1000,'mean')
-#print('ts2',ts2)
-#print('ts3',ts3)
+print('ts3.ye',ts3.ye)
 '''
-#plt.figure(figsize=(10,6))
-#plt.plot(ts2.t,ts2.y)
-#plt.plot(ts3.t,ts3.y)
-plt.plot(ts3.t-0.5,ts3.y)
-plt.plot(ts3.t+0.5,ts3.y)
+plt.figure(figsize=(10,6))
+plt.plot(ts3.t,ts3.ye)
+# plt.plot(ts3.t,ts3.y)
+#plt.plot(ts3.t-0.5,ts3.y)
+#plt.plot(ts3.t+0.5,ts3.y)
 # plt.xlim(-0.5,1.5)
-plt.title('EC21178 Folded Binned Light Curve')
+plt.title('EC21178 Y-error Binned Light Curve')
 plt.xlabel('Phase')
 plt.ylabel('FLux')
 plt.show()
@@ -219,21 +254,23 @@ ph = np.mod(((tsnew + (z[0][0]/2) - t0)) / z[0][0],1) - 0.5
 ts.y -= f(ph)
 
 
-ls    = LombScargle(ts.t,ts.y)                  # Create periodogram
-fmax  = 30.                                 # Set upper frequency (cycles/min) limit 
-nfreq = int(1000*fmax*(ts.t.max()-ts.t.min()))    # Calculate number of frequency steps, oversample x10
-freq  = np.linspace(fmax/nfreq,fmax,nfreq)  # Create frequency array
+ls    = LombScargle(ts.t,ts.y)                   # Create periodogram
+fmax  = 30.                                      # Set upper frequency (cycles/min) limit 
+nfreq = int(1000*fmax*(ts.t.max()-ts.t.min()))   # Calculate number of frequency steps, oversample x10
+freq  = np.linspace(fmax/nfreq,fmax,nfreq)       # Create frequency array
 #freq = np.linspace(0.1,5,100)
-power = ls.power(freq)                      # Calculate periodogram powers            
-fmax  = freq[power==power.max()]            # Calculate peak in periodogra
+power = ls.power(freq)                           # Calculate periodogram powers            
+fmax  = freq[power==power.max()]                 # Calculate peak in periodogra
+
 # Plot Periodogram
-'''
+
 plt.figure(figsize=(16,8))
 plt.plot(freq, power)
 plt.show()
-'''
+
+
 # Plot noise curve
-'''
+
 corr, _ = pearsonr(ecl[:,0], ecl[:,3])
 plt.figure(figsize=(16,8))
 plt.plot(ts.t,ts.y)
@@ -242,7 +279,8 @@ plt.title('Residual Noise')
 plt.xlabel('Time')
 plt.ylabel('Counts')
 plt.show()
-'''
+
+
 # Subtract linear fit from noise
 
 z = np.polyfit(ts.t, ts.y, 1)
